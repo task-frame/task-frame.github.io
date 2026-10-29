@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskFrame: Connecting Task-Level Planning with Frame-Level Control for Game Agents</title>
+<meta name="description" content="TaskFrame is a hierarchical game agent: a vision-language planner decomposes a goal once per task, and a lightweight controller emits keyboard-and-mouse actions at every game step.">
+<meta property="og:title" content="TaskFrame: Connecting Task-Level Planning with Frame-Level Control for Game Agents">
+<meta property="og:description" content="Plan once per task. Act at every frame.">
+<meta property="og:image" content="static/img/teaser.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="nav" id="nav">
+  <a class="brand" href="#top"><span class="brand-pix" data-icon="log"></span><span>TaskFrame</span></a>
+  <div class="nl">
+    <a href="#overview">Overview</a>
+    <a href="#demo">Two Rates</a>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="#rollouts">Rollouts</a>
+    <a href="#citation">Citation</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero" id="top">
+  <div class="wall" id="wall"></div>
+  <div class="scrim"></div>
+  <div class="scanlines"></div>
+  <div class="hero-in">
+    <div class="kicker reveal">Hierarchical game agent &middot; Minecraft</div>
+    <h1 class="reveal">TaskFrame</h1>
+    <p class="paper-title reveal">Connecting Task-Level Planning with Frame-Level Control for Game Agents</p>
+    <p class="tagline reveal">
+      <span class="tg-plan">Plan once per task.</span>
+      <span class="tg-act">Act at every frame.</span>
+    </p>
+
+    <div class="authors reveal">
+      <span class="arow">
+        Guangzhi Wang<sup>1*</sup>, Junfu Pu<sup>1*&dagger;</sup>, Yiran Wang<sup>1*</sup>, Xingyilang Yin<sup>2*</sup>,
+        Honghao Chen<sup>1</sup>, Cheng Cheng<sup>1</sup>, Lingen Li<sup>3</sup>,
+      </span>
+      <span class="arow">
+        Yinan Zhou<sup>4</sup>, Jiarui Wu<sup>3</sup>, Yinuo Jiang<sup>5</sup>, Hongbo Jin<sup>6</sup>,
+        Xiaodong Cun<sup>1,7&#9993;</sup>, Ying Shan<sup>1</sup>
+      </span>
+      <span class="aff">
+        <sup>1</sup>Tencent ARC Lab &nbsp; <sup>2</sup>University of Macau &nbsp;
+        <sup>3</sup>The Chinese University of Hong Kong &nbsp; <sup>4</sup>City University of Hong Kong &nbsp;
+        <sup>5</sup>Huazhong University of Science and Technology &nbsp; <sup>6</sup>Peking University &nbsp;
+        <sup>7</sup>Great Bay University
+      </span>
+      <span class="aff notes">* Equal contribution &nbsp; &dagger; Project lead &nbsp; &#9993; Corresponding author</span>
+    </div>
+
+    <div class="links reveal">
+      <a class="link soon" aria-disabled="true">
+        <svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6zM14 3.5V8h4.5"/></svg>Paper<span class="st">Soon</span>
+      </a>
+      <a class="link soon" aria-disabled="true">
+        <svg viewBox="0 0 24 24"><path d="M3 3h7l2 3h9v15H3z"/></svg>arXiv<span class="st">Soon</span>
+      </a>
+      <a class="link soon" aria-disabled="true">
+        <svg viewBox="0 0 24 24"><path d="M12 .5a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.4 1 .1-.8.4-1.3.8-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11 11 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A11.5 11.5 0 0 0 12 .5z"/></svg>Code<span class="st">Soon</span>
+      </a>
+      <a class="link live" href="#citation">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>BibTeX
+      </a>
+    </div>
+  </div>
+  <a class="scroll-cue" href="#stats" aria-label="Scroll down"><span></span></a>
+</header>
+
+<!-- ============ STATS ============ -->
+<section class="stats" id="stats">
+  <div class="stat"><div class="num"><span data-count="51">0</span>%</div><div class="lbl">average kill success<br><em>vs. 31% for JARVIS-VLA-7B</em></div></div>
+  <div class="stat"><div class="num"><span data-count="9">0</span>B</div><div class="lbl">vision-language planner<br><em>runs once per task</em></div></div>
+  <div class="stat"><div class="num"><span data-count="20">0</span>&thinsp;Hz</div><div class="lbl">frame-level control<br><em>an action every game step</em></div></div>
+  <div class="stat"><div class="num">~<span data-count="100">0</span>&thinsp;h</div><div class="lbl">human gameplay<br><em>native keyboard &amp; mouse</em></div></div>
+  <div class="stat"><div class="num"><span data-count="3">0</span></div><div class="lbl">training stages<br><em>plan &rarr; control &rarr; align</em></div></div>
+</section>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="block" id="overview">
+  <div class="sec-head"><span class="idx">01</span><h2>Overview</h2></div>
+  <div class="ov-grid">
+    <div class="ov-text">
+      <p class="lead">
+        Task-level reasoning and frame-level control operate at <b>different frequencies</b>.
+        Understanding a scene and ordering subgoals needs a large model; executing those subgoals
+        needs a lightweight controller that reacts to every new frame.
+      </p>
+      <p>
+        <b class="hl">TaskFrame</b> connects the two through <b>planner-produced goal representations</b>.
+        A vision-language <b>task planner</b> decomposes a high-level instruction into an ordered sequence of
+        atomic goals, each terminated by a special goal token. The hidden states at these tokens are cached and
+        passed to a lightweight <b>frame controller</b>, which combines the active goal embedding with recent
+        frames to emit discrete keyboard and mouse-button actions and continuous camera motion at every game step.
+        The large planner stays outside the frame-level control loop.
+      </p>
+    </div>
+    <div class="ov-cards">
+      <div class="card c-plan">
+        <div class="card-ic" data-icon="tree"></div>
+        <h3>Task planner</h3>
+        <p>Qwen3.5-9B trained with SFT and <b>dependency-aware GRPO</b> for visually grounded decomposition.</p>
+      </div>
+      <div class="card c-tok">
+        <div class="card-ic tok">z</div>
+        <h3>Goal tokens</h3>
+        <p>Hidden states of special goal tokens give continuous goal embeddings, cached and reused across control steps.</p>
+      </div>
+      <div class="card c-ctrl">
+        <div class="card-ic" data-icon="bank"></div>
+        <h3>Frame controller</h3>
+        <p>Causal Transformer with a <b>hybrid head</b>: autoregressive keys &amp; buttons + flow-matching camera.</p>
+      </div>
+    </div>
+  </div>
+  <figure class="fig glow" data-zoom>
+    <img src="static/img/teaser.png" alt="Overview of TaskFrame">
+    <figcaption><b>Overview of TaskFrame.</b> Once per task, the task planner decomposes a high-level instruction into ordered atomic goals, each terminated by a special goal token whose hidden state is cached as a goal embedding. At every frame, the frame controller takes the embedding of the active goal and the latest visual input and emits native keyboard-and-mouse actions.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ TWO-RATE DEMO ============ -->
+<section class="block" id="demo">
+  <div class="sec-head"><span class="idx">02</span><h2>Two clocks, one agent</h2></div>
+  <p class="sec-sub">Multi-rate inference: the planner decodes the plan <b>once</b>; the controller acts at <b>every frame</b> using only the cached embedding of the active goal.</p>
+
+  <div class="sim" id="sim">
+    <div class="sim-row sim-plan">
+      <div class="sim-label"><span class="dot blue"></span>Task rate <em>once per task</em></div>
+      <div class="sim-plan-body">
+        <div class="bubble"><span class="pix" data-icon="log"></span><span id="sim-goal">Collect oak logs across the river</span></div>
+        <div class="arrow-r"></div>
+        <div class="planner-box" id="planner-box"><b>VLM</b><span>planner</span></div>
+        <div class="arrow-r"></div>
+        <div class="steps" id="sim-steps"></div>
+      </div>
+    </div>
+
+    <div class="sim-row sim-ctrl">
+      <div class="sim-label"><span class="dot green"></span>Frame rate <em>20 Hz</em></div>
+      <div class="sim-ctrl-body">
+        <div class="filmstrip" id="filmstrip"></div>
+        <div class="arrow-r"></div>
+        <div class="ctrl-box" id="ctrl-box">
+          <b>Frame</b><span>controller</span>
+          <div class="active-z" id="active-z">z<sub>1</sub></div>
+        </div>
+        <div class="arrow-r"></div>
+        <div class="hud">
+          <div class="keys">
+            <div class="krow"><span class="key" data-k="W">W</span></div>
+            <div class="krow"><span class="key" data-k="A">A</span><span class="key" data-k="S">S</span><span class="key" data-k="D">D</span></div>
+            <div class="krow"><span class="key wide" data-k="SPACE">space</span></div>
+          </div>
+          <div class="mouse">
+            <div class="mbtn" data-k="L"></div><div class="mbtn" data-k="R"></div>
+            <div class="mbody"></div>
+          </div>
+          <div class="cam">
+            <div class="cam-ring"><div class="cam-dot" id="cam-dot"></div></div>
+            <span>camera &Delta;&psi;, &Delta;&theta;</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sim-meters">
+      <div class="meter"><span>planner calls</span><b id="m-plan">0</b></div>
+      <div class="meter"><span>controller steps</span><b id="m-ctrl">0</b></div>
+      <div class="meter"><span>active goal</span><b id="m-goal">&ndash;</b></div>
+      <button class="btn" id="sim-toggle">Pause</button>
+      <button class="btn ghost" id="sim-restart">Restart</button>
+    </div>
+    <p class="sim-note">Schematic animation of Sec.&nbsp;3.4, not a recorded rollout. Key presses are illustrative.
+      As in the paper, switching to the next atomic goal is supplied by an external execution protocol.</p>
+  </div>
+</section>
+
+<!-- ============ METHOD ============ -->
+<section class="block" id="method">
+  <div class="sec-head"><span class="idx">03</span><h2>Method</h2></div>
+
+  <figure class="fig light" data-zoom>
+    <img src="static/img/method.png" alt="TaskFrame architecture">
+    <figcaption><b>(A) Task Planner.</b> A vision-language model decomposes a high-level goal into an ordered sequence of atomic goals, each terminated by a special goal token; their hidden states are cached as goal embeddings z<sub>1</sub>, &hellip;, z<sub>k</sub>.
+    <b>(B) Frame Controller.</b> A per-frame autoregressive policy. Each frame consumes the active goal embedding, an action-query token, a SigLIP image token, and the action, which only later frames attend to. The action-output token is decoded into discrete keyboard and mouse-button presses and continuous camera motion.</figcaption>
+  </figure>
+
+  <h3 class="sub">Three-stage training</h3>
+  <div class="stages">
+    <div class="stage-tabs" role="tablist">
+      <button class="stage-tab active" data-stage="0"><span>Stage 1</span>Planner training</button>
+      <button class="stage-tab" data-stage="1"><span>Stage 2</span>Controller pretraining</button>
+      <button class="stage-tab" data-stage="2"><span>Stage 3</span>Joint alignment</button>
+      <div class="stage-bar" id="stage-bar"></div>
+    </div>
+    <div class="stage-panels">
+      <div class="stage-panel active">
+        <div class="sp-text">
+          <p>Starting from <b>Qwen3.5-9B</b>, the planner is trained for visually grounded instruction decomposition on the hierarchical annotations of GameHorizon Suite: first with supervised fine-tuning, then refined with <b>dependency-aware GRPO</b> that rewards step-count agreement and necessary precedence relations separately.</p>
+          <div class="chips"><span class="chip fire">LLM + connector trained</span><span class="chip ice">vision encoder frozen</span></div>
+        </div>
+        <div class="sp-viz">
+          <div class="mod plan on">Task planner</div><div class="mod ctrl off">Frame controller</div>
+        </div>
+      </div>
+      <div class="stage-panel">
+        <div class="sp-text">
+          <p>The controller is pretrained on atomic-segment gameplay with native keyboard-and-mouse actions. A frozen, generic vision-language model (Qwen3.5-9B) encodes the frame at the start of each window together with its atomic instruction, terminated by the same goal token, to produce the goal embedding.</p>
+          <div class="chips"><span class="chip fire">controller trained</span><span class="chip ice">generic goal encoder frozen</span></div>
+        </div>
+        <div class="sp-viz">
+          <div class="mod enc ice2">Generic VLM encoder</div><div class="mod ctrl on">Frame controller</div>
+        </div>
+      </div>
+      <div class="stage-panel">
+        <div class="sp-text">
+          <p>The generic encoder is replaced with the GRPO-trained planner, augmented with <b>LoRA adapters</b> in every Transformer block. The action objective updates all controller parameters and the adapters, while base planner weights stay frozen. The adapted planner is the single planner used at inference, for both decomposition and goal embeddings.</p>
+          <div class="chips"><span class="chip fire">controller + LoRA trained</span><span class="chip ice">base planner frozen</span></div>
+        </div>
+        <div class="sp-viz">
+          <div class="mod plan ice2">Task planner <i class="lora">+ LoRA</i></div><div class="mod ctrl on">Frame controller</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <h3 class="sub">Dependency-aware GRPO</h3>
+      <p>A reference plan records one execution sequence, but several orderings may be valid. Generated steps are aligned to reference steps by Hungarian assignment, and the reward separates <b>dependency satisfaction</b> <span class="m">S_{\mathrm{dep}}</span> over annotated must-precede pairs from <b>conventional-order agreement</b> <span class="m">S_{\mathrm{conv}}</span> over the remaining pairs:</p>
+      <div class="eq" data-eq="R_k=\max\!\left(0,\,1-\tfrac{|\hat{k}-k|}{k}\right)"></div>
+      <div class="eq" data-eq="R_{\mathrm{ord}}=\mathbf{1}[\hat{k}=k]\,\bigl(0.8\,S_{\mathrm{dep}}+0.2\,S_{\mathrm{conv}}\bigr),\qquad R=0.3\,R_k+0.7\,R_{\mathrm{ord}}"></div>
+      <p class="small">The 0.8/0.2 split is derived from the dependency annotation statistics of GameHorizon Suite.</p>
+    </div>
+
+    <div class="panel play">
+      <h3 class="sub">Reward playground <span class="tag">toy example</span></h3>
+      <p class="small">Reorder or drop steps of a toy plan and watch the reward above respond. Arrows mark the illustrative must-precede dependencies <span class="m">D</span>.</p>
+      <ol class="toy" id="toy"></ol>
+      <div class="toy-scores">
+        <div><span class="m">R_k</span><b id="t-rk">1.00</b></div>
+        <div><span class="m">S_{\mathrm{dep}}</span><b id="t-sdep">1.00</b></div>
+        <div><span class="m">S_{\mathrm{conv}}</span><b id="t-sconv">1.00</b></div>
+        <div class="big"><span class="m">R</span><b id="t-r">1.00</b></div>
+      </div>
+      <div class="rbar"><div id="t-rbar"></div></div>
+      <button class="btn ghost sm" id="toy-reset">Reset plan</button>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <h3 class="sub">Goal representations</h3>
+      <p>Each atomic goal is terminated by a special goal token <span class="m">\tau</span>. The hidden state at the <span class="m">j</span>-th goal token summarizes the goal in the context of the observation, the instruction, and the preceding steps:</p>
+      <div class="eq" data-eq="\mathbf{y}=[\operatorname{tok}(\hat{s}_1),\tau,\ldots,\operatorname{tok}(\hat{s}_{\hat{k}}),\tau],\qquad z_j=H_\theta(o,g,\mathbf{y})_{p_j}"></div>
+      <p>The decoded language supports supervision and evaluation, while the controller consumes only <span class="m">z_j</span>.</p>
+    </div>
+    <div class="panel">
+      <h3 class="sub">Hybrid action head</h3>
+      <p>The action-output token is decoded by two heads: a small autoregressive decoder for <b>discrete keys and mouse buttons</b>, and a lightweight <b>flow-matching head</b> for continuous camera motion (yaw and pitch in degrees), which avoids discretizing small corrections and can represent several plausible directions.</p>
+      <div class="eq" data-eq="\mathcal{L}_{\mathrm{act}}=\mathcal{L}_{\mathrm{key}}+\mathcal{L}_{\mathrm{btn}}+\lambda_{\mathrm{mouse}}\,\mathcal{L}_{\mathrm{mouse}}"></div>
+      <div class="mini-stats">
+        <div><b>26</b><span>key classes</span></div>
+        <div><b>4</b><span>button classes</span></div>
+        <div><b>T = 21</b><span>frames &asymp; 1 s</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTS ============ -->
+<section class="block" id="results">
+  <div class="sec-head"><span class="idx">04</span><h2>Results</h2></div>
+
+  <div class="res-card">
+    <div class="res-head">
+      <div>
+        <h3 class="sub">Closed-loop control in Minecraft</h3>
+        <p class="small">Success rate (%) on atomic tasks over 3 evaluation seeds (12 episodes per kill task, 6 per mining task, per seed). Protocol of JARVIS-VLA and MCU in MineStudio.</p>
+      </div>
+      <div class="seg" id="cl-seg"></div>
+    </div>
+    <div class="bars" id="cl-bars"></div>
+    <p class="small muted" id="cl-note"></p>
+  </div>
+
+  <div class="res-card">
+    <div class="res-head">
+      <div>
+        <h3 class="sub">Instruction decomposition</h3>
+        <p class="small">SSF1 is evaluated without a supplied step count on 2.1K held-out plans; Task2 of GameHorizon Suite measures step ordering on 250 questions. General-purpose models are evaluated zero-shot.</p>
+      </div>
+      <div class="seg" id="pl-seg"></div>
+    </div>
+    <div class="hbars" id="pl-bars"></div>
+  </div>
+
+  <div class="three">
+    <div class="res-card sm">
+      <h3 class="sub">Goal conditioning in closed loop</h3>
+      <p class="small">Kill success (%) when only the supplied goal is changed; 48 episodes per task in each of three seeds.</p>
+      <div class="hbars compact" id="goal-bars"></div>
+    </div>
+    <div class="res-card sm">
+      <h3 class="sub">Planner &amp; controller roles</h3>
+      <p class="small">Offline action prediction on held-out gameplay with high-level goals.</p>
+      <table class="tbl" id="roles-tbl"></table>
+    </div>
+    <div class="res-card sm">
+      <h3 class="sub">Camera head</h3>
+      <p class="small">Camera MAE (&deg;) on held-out gameplay; same data and schedule, only the camera head differs.</p>
+      <div class="mae" id="mae"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROLLOUTS ============ -->
+<section class="block" id="rollouts">
+  <div class="sec-head"><span class="idx">05</span><h2>Closed-loop rollouts</h2></div>
+  <p class="sec-sub">Recorded first-person episodes from closed-loop Minecraft evaluation. Combat clips are successful TaskFrame rollouts: the controller turns, closes in, and keeps attacking until the target is gone. Oak is a successful mining episode from the aligned controller.</p>
+
+  <div class="player" id="player">
+    <div class="ptabs" id="ptabs"></div>
+    <div class="pstage">
+      <video id="pmain" muted loop playsinline autoplay controls preload="metadata"></video>
+      <div class="phud"><span class="rec"></span><span id="ptask">kill cow</span><span class="pf" id="pframe"></span></div>
+      <div class="pbadge ok" id="pbadge">SUCCESS</div>
+    </div>
+  </div>
+
+  <h3 class="sub center">Same scene, different agents</h3>
+  <div class="cmp-tabs" id="cmp-tabs"></div>
+  <div class="cmp" id="cmp"></div>
+  <p class="small muted center" id="cmp-cap"></p>
+</section>
+
+<!-- ============ LIMITATIONS ============ -->
+<section class="block narrow" id="limits">
+  <div class="sec-head"><span class="idx">06</span><h2>Limitations</h2></div>
+  <ul class="lim">
+    <li>The agent does not decide on its own when an atomic goal is done; it relies on an external execution protocol to switch to the next goal, and it does not replan after a failure.</li>
+    <li>The controller sees only about one second of history, which is short for long-horizon tasks.</li>
+    <li>All experiments are conducted in Minecraft; extending the method to other games remains future work.</li>
+  </ul>
+</section>
+
+<!-- ============ CITATION ============ -->
+<section class="block narrow" id="citation">
+  <div class="sec-head"><span class="idx">07</span><h2>Citation</h2></div>
+  <div class="bib">
+    <button class="btn ghost sm copy" id="copy-bib">Copy</button>
+<pre id="bib">@article{wang2026taskframe,
+  title   = {TaskFrame: Connecting Task-Level Planning with Frame-Level Control for Game Agents},
+  author  = {Wang, Guangzhi and Pu, Junfu and Wang, Yiran and Yin, Xingyilang and Chen, Honghao and
+             Cheng, Cheng and Li, Lingen and Zhou, Yinan and Wu, Jiarui and Jiang, Yinuo and
+             Jin, Hongbo and Cun, Xiaodong and Shan, Ying},
+  journal = {arXiv preprint},
+  year    = {2026}
+}</pre>
+  </div>
+</section>
+
+<footer>
+  <img src="static/img/arc_logo.png" alt="Tencent ARC Lab">
+  <p>Tencent ARC Lab &middot; Website layout inspired by <a href="https://gamehorizon-suite.github.io/">GameHorizon Suite</a>.</p>
+</footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="static/js/main.js"></script>
+</body>
+</html>
